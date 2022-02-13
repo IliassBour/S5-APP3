@@ -1,0 +1,10 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import signal
+import sounddevice as sd
+import soundfile as sf
+
+if __name__ == "__main__":
+    #extract Guitare sound
+
+    #extract basson sound
