@@ -1,9 +1,0 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy import signal
-import simpleaudio as sa
-
-if __name__ == "__main__":
-    #extract Guitare sound
-
-    #extract basson sound
