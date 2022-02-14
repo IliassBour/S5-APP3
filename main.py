@@ -86,43 +86,37 @@ def sinusoïdes_principales():
 
 def son_corrompu():
     data, fe = extract_wave("note_basson_plus_sinus_1000_Hz.wav")
-    #data = np.abs(data) #Redréssage
-    n_e = len(data) #Nombre d'échantillons
-    print(n_e)
-    print(f"fe:{fe}")
 
-    #Filtre passe-bas d'ordre N=6000, fc = 40Hz
+    #Filtre passe-bas N=6000, fc = 40Hz
     N = 6000 #Ordre du filtre
-    K = (2*40*N/fe)+1
-    print(f"K:{K}")
-    h_n_bas = lambda n: (1/N) * np.sin(np.pi * n * K/N) / np.sin(np.pi * n/N) if n else K/N
+    fc=40
+    K = np.ceil((2*fc*N/fe)+1)
+
+    h_n_bas = lambda n: (1/N)*np.sin(np.pi * n * K/N) / np.sin(np.pi * n/N) if n else K/N
 
     #Filtre coupe-bande: 960-1040 Hz
-    dirac = lambda n: 1 if n == 0 else 0  # Impulsion de Dirac
     omega_0 = 1000
-    omega_1 = 40
 
-    h_n = lambda n: dirac(n) - 2 * h_n_bas(n) * np.cos(omega_0 * n)
+    dirac = lambda n: 1 if n == 0 else 0
+    h_n = lambda n: dirac(n) - h_n_bas(n)*np.cos(2*np.pi*omega_0 /fe*n)
 
     #Signal filtrée
     repImp = []
-    for n in data:
+    n_RIF=np.arange(int(-N/2), int(N/2))
+    for n in range(int(-N/2), int(N/2)):
         repImp.append(h_n(n))
-    signal_filtree = numpy.convolve(data, repImp)
+
+    signal_filtree = np.convolve(data, repImp)
 
     #Répétition
-    for i in range(1):
-        repImp = []
-        for n in signal_filtree:
-            repImp.append(h_n(n))
-        signal_filtree = numpy.convolve(signal_filtree, repImp)
+    for n in range(10):
+        signal_filtree = np.convolve(signal_filtree, repImp)
 
     plt.figure("Signal filtrée")
     plt.plot(signal_filtree)
 
     # Créer nouveau fichier .wav
-    scaled = np.int16(signal_filtree / np.max(np.abs(signal_filtree)) * 32767)
-    wavfile.write('test.wav', 44100, scaled)
+    wavfile.write('basson.wav', fe, signal_filtree.astype(np.int16))
 
     # Fichier .wav
     plt.figure("Fichier wav")
@@ -131,8 +125,9 @@ def son_corrompu():
 
 
 if __name__ == "__main__":
-    sinusoïdes_principales()
-    filtre_RIF_passe_bas()
+    #sinusoïdes_principales()
+    #filtre_RIF_passe_bas()
+    son_corrompu()
     plt.show()
     #son_corrompu()
 
