@@ -13,8 +13,30 @@ def extract_wave(filename):
 
     return data, fe
 
-def moyenne_mobile():
-    return 0;
+def filtre_RIF_passe_bas():
+    w = np.pi / 1000  # fréquence normalisé
+    N = find_N(w)
+    wn = np.arange(0, 2*np.pi, w)
+
+
+    hn = []
+    for index in wn:
+        hn.append(moyenne_mobile(N,index))
+
+    plt.figure("Hn")
+    plt.stem(hn)
+    plt.semilogy()
+
+    return hn
+
+def moyenne_mobile(N, w):
+    return 1/N*(1-np.exp(-1j*N*w))/(1-np.exp(-1j*w))
+
+def find_N(w):
+    N=1
+    while not (np.sqrt(2)/2 - 0.0001 < np.abs(moyenne_mobile(N, w)) < np.sqrt(2)/2 + 0.0001):
+            N=N+1
+    return N
 
 
 def sinusoïdes_principales():
@@ -110,5 +132,7 @@ def son_corrompu():
 
 if __name__ == "__main__":
     sinusoïdes_principales()
+    filtre_RIF_passe_bas()
+    plt.show()
     #son_corrompu()
 
