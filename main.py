@@ -7,28 +7,38 @@ np.set_printoptions(suppress=True)
 
 #signal.find_peaks(), height = 5000, distance = 1000
 
+
 def extract_wave(filename):
     fe, data = wavfile.read(filename)
 
     return data, fe
 
+def moyenne_mobile():
+    return 0;
+
+
 def sinusoïdes_principales():
     # Extraire le signal et la fréquence d'échantillonage du fichier .wav
     data, fe = extract_wave("note_guitare_LAd.wav")
     N = len(data)
+    #hm = [moyenne_mobile(i, K), for i in N]
+    #hm = np.pad(hm, (0, np.abs(len(N) - len(data))), "constant")
 
     # Transformée de fourrier rapide
     data = np.abs(data)  # Redressage
-    fft = np.fft.fft(data * np.hamming(N))  # Application d'une fenêtre de Hamming
-    fft = 20 * np.log10(fft)  # Réponse en dB
+    xm = np.fft.fft(data * np.hamming(N))  # Application d'une fenêtre de Hamming
+    #xm = 20 * np.log10(xm)  # Réponse en dB
+    #ym = hm * xm
+    ym = xm
+    ym = 20 * np.log10(ym)  # Réponse en dB
 
     # Sinusoïdes principales (>50% de l'amplitude maximale, à chaque 1kHz)
-    print(f"Valeur minimale pour considérer un sommet:\n{np.abs(max(fft) * 0.5)}")
-    peaks, _ = signal.find_peaks(np.abs(fft), height=np.abs(max(fft) * 0.5), distance=1000)
+    print(f"Valeur minimale pour considérer un sommet:\n{np.abs(max(ym) * 0.5)}")
+    peaks, _ = signal.find_peaks(np.abs(ym), height=np.abs(max(ym) * 0.5), distance=1000)
 
     plt.figure("Résultat fft")
-    plt.plot(np.abs(fft))
-    plt.plot(peaks, np.abs(fft)[peaks], 'x')
+    plt.plot(np.abs(ym))
+    plt.plot(peaks, np.abs(ym)[peaks], 'x')
 
     print("\nVALEURS m:")
     print(peaks[1:32])  # m des sinusoïdes principales, le peak[0] est le Gain DC
@@ -41,11 +51,11 @@ def sinusoïdes_principales():
 
     # Amplitudes
     print("\nAMPLITUDES:")
-    print(np.abs(fft[peaks[1:32]]))
+    print(np.abs(ym[peaks[1:32]]))
 
     # Phases
     print("\nPHASES:")
-    print(np.angle(fft[peaks[1:32]]))
+    print(np.angle(ym[peaks[1:32]]))
 
     # Fichier wav
     plt.figure("Fichier wav")
@@ -79,7 +89,7 @@ def son_corrompu():
     signal_filtree = numpy.convolve(data, repImp)
 
     #Répétition
-    for i in range(5):
+    for i in range(1):
         repImp = []
         for n in signal_filtree:
             repImp.append(h_n(n))
@@ -99,6 +109,6 @@ def son_corrompu():
 
 
 if __name__ == "__main__":
-    #sinusoïdes_principales()
-    son_corrompu()
+    sinusoïdes_principales()
+    #son_corrompu()
 
