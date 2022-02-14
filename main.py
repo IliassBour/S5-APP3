@@ -4,8 +4,13 @@ import numpy as np
 from scipy import signal
 from scipy.io import wavfile
 np.set_printoptions(suppress=True)
-
-#signal.find_peaks(), height = 5000, distance = 1000
+FACT_DO = 0.561
+FACT_RE = 0.629
+FACT_MI = 0.707
+FACT_FA = 0.749
+FACT_SOL = 0.841
+FACT_LA = 0.943
+FACT_SI = 1.06
 
 
 def extract_wave(filename):
@@ -13,71 +18,150 @@ def extract_wave(filename):
 
     return data, fe
 
-def filtre_RIF_passe_bas():
+def filtre_moyenne_mobile(data_length):
     w = np.pi / 1000  # fréquence normalisé
     N = find_N(w)
-    wn = np.arange(0, 2*np.pi, w)
+    wn = np.arange(0, np.pi, np.pi/data_length)
 
-
-    hn = []
+    hm = []
     for index in wn:
-        hn.append(moyenne_mobile(N,index))
+        hm.append(moyenne_mobile(N,index))
 
-    plt.figure("Hn")
-    plt.stem(hn)
-    plt.semilogy()
-
-    return hn
+    return hm
 
 def moyenne_mobile(N, w):
-    return 1/N*(1-np.exp(-1j*N*w))/(1-np.exp(-1j*w))
+    if w:
+        return 1/N*(1-np.exp(-1j*N*w))/(1-np.exp(-1j*w))
+    else:
+        return 1/N
 
 def find_N(w):
-    N=1
+    N = 1
     while not (np.sqrt(2)/2 - 0.0001 < np.abs(moyenne_mobile(N, w)) < np.sqrt(2)/2 + 0.0001):
-            N=N+1
+            N = N+1
     return N
+
+def somme_des_sinus(peaks, ym, facteur):
+    somme = 0
+    for peak in peaks:
+        somme += ym[peak]
+    return facteur * somme
+
+def creer_note(f, fact, fe, amp, phi, env):
+    somme = np.zeros(len(env))
+    n = np.arange(0, len(env))
+    for i in range(len(amp)):
+        somme = somme + amp[i] * np.sin(2 * np.pi * f[i] * fact * n/fe + phi[i])
+
+    somme = somme/max(amp)
+    #plt.figure("somme")
+    #plt.plot(somme)
+    #plt.show()
+    return (env * somme)[:35000]
 
 
 def sinusoïdes_principales():
+    ####################################################################################################################
     # Extraire le signal et la fréquence d'échantillonage du fichier .wav
+    ####################################################################################################################
     data, fe = extract_wave("note_guitare_LAd.wav")
-    N = len(data)
-    #hm = [moyenne_mobile(i, K), for i in N]
-    #hm = np.pad(hm, (0, np.abs(len(N) - len(data))), "constant")
+    N = len(data)  #Nombre d'échantillons
+    K = find_N(np.pi / 1000)  #Nombre de coefficients du filtre
+    hm = filtre_moyenne_mobile(N)
 
+    ####################################################################################################################
     # Transformée de fourrier rapide
+    ####################################################################################################################
     data = np.abs(data)  # Redressage
     xm = np.fft.fft(data * np.hamming(N))  # Application d'une fenêtre de Hamming
-    #xm = 20 * np.log10(xm)  # Réponse en dB
-    #ym = hm * xm
-    ym = xm
+    ym = hm * xm
     ym = 20 * np.log10(ym)  # Réponse en dB
 
-    # Sinusoïdes principales (>50% de l'amplitude maximale, à chaque 1kHz)
-    print(f"Valeur minimale pour considérer un sommet:\n{np.abs(max(ym) * 0.5)}")
-    peaks, _ = signal.find_peaks(np.abs(ym), height=np.abs(max(ym) * 0.5), distance=1000)
+    ####################################################################################################################
+    # Sinusoïdes principales (>42% de l'amplitude maximale, à chaque 1kHz)
+    ####################################################################################################################
+    min_sommet = np.abs(max(ym) * 0.42)
+    print(f"Valeur minimale pour considérer un sommet:\n{min_sommet}")
+    peaks, _ = signal.find_peaks(np.abs(ym), height=min_sommet, distance=1000)
 
+    ####################################################################################################################
+    # Affichage
+    ####################################################################################################################
     plt.figure("Résultat fft")
-    plt.plot(np.abs(ym))
-    plt.plot(peaks, np.abs(ym)[peaks], 'x')
+    freq = [(i / N) * fe for i in range(len(ym))]
+    plt.plot(freq, np.abs(ym))
+    plt.plot(peaks * fe / len(ym), np.abs(ym)[peaks], 'x')
+
+    print(f"\nNombre de peaks:\n{len(peaks)}")
 
     print("\nVALEURS m:")
-    print(peaks[1:32])  # m des sinusoïdes principales, le peak[0] est le Gain DC
+    print(peaks[1:33])  # m des sinusoïdes principales, le peak[0] est le Gain DC
 
-    # Fréquences normalisées
+    ### Fréquences normalisées
     # f = (m / N) * fe
-    peaksNorm = (peaks[1:32] / N) * fe
+    peaksNorm = (peaks[1:33] / N) * fe
     print("\nFRÉQUENCES NORMALISÉES:")
     print(peaksNorm)
 
-    # Amplitudes
+    ### Amplitudes
     print("\nAMPLITUDES:")
-    print(np.abs(ym[peaks[1:32]]))
+    print(np.abs(ym[peaks[1:33]]))
 
-    # Phases
+    ### Phases
     print("\nPHASES:")
-    print(np.angle(ym[peaks[1:32]]))
+    print(np.angle(ym[peaks[1:33]]))
+
+    ####################################################################################################################
+    # Enveloppe
+    ####################################################################################################################
+    #hn = np.fft.ifft(hm * np.hamming(len(hm)))
+    hn = np.full(K, 1/K)
+
+    plt.figure("hn")
+    plt.plot(hn)
+
+    enveloppe = np.convolve(data, hn)
+
+    plt.figure("Enveloppe")
+    plt.plot(enveloppe)
+
+    ####################################################################################################################
+    # Synthèse des sons
+    ####################################################################################################################
+
+    sinus_do = creer_note(peaksNorm, FACT_DO, fe, np.abs(ym[peaks[1:33]]), np.angle(ym[peaks[1:33]]), enveloppe)
+    sinus_re = creer_note(peaksNorm, FACT_RE, fe, np.abs(ym[peaks[1:33]]), np.angle(ym[peaks[1:33]]), enveloppe)
+    sinus_mi = creer_note(peaksNorm, FACT_MI, fe, np.abs(ym[peaks[1:33]]), np.angle(ym[peaks[1:33]]), enveloppe)
+    sinus_fa = creer_note(peaksNorm, FACT_FA, fe, np.abs(ym[peaks[1:33]]), np.angle(ym[peaks[1:33]]), enveloppe)
+    sinus_sol = creer_note(peaksNorm, FACT_SOL, fe, np.abs(ym[peaks[1:33]]), np.angle(ym[peaks[1:33]]), enveloppe)
+    sinus_la = creer_note(peaksNorm, FACT_LA, fe, np.abs(ym[peaks[1:33]]), np.angle(ym[peaks[1:33]]), enveloppe)
+    sinus_si = creer_note(peaksNorm, FACT_SI, fe, np.abs(ym[peaks[1:33]]), np.angle(ym[peaks[1:33]]), enveloppe)
+    silence = np.zeros(len(enveloppe))[:15000]
+
+    #symphonie = [sinus_sol, sinus_sol, sinus_sol, sinus_mi, silence, sinus_fa, sinus_fa, sinus_fa, sinus_re].join()
+    #symphonie = sinus_sol + sinus_sol + sinus_sol + sinus_mi + silence + sinus_fa + sinus_fa + sinus_fa + sinus_re
+    symphonie = numpy.concatenate([sinus_sol, sinus_sol, sinus_sol, sinus_mi, silence, sinus_fa, sinus_fa, sinus_fa, sinus_re], axis=None)
+
+    plt.figure("Symphonie")
+    plt.plot(symphonie)
+
+    # Créer nouveaux fichier .wav
+    scaled = np.int16(sinus_do / np.max(np.abs(sinus_do)) * 32767)
+    wavfile.write('do.wav', 44100, scaled)
+    scaled = np.int16(sinus_re / np.max(np.abs(sinus_re)) * 32767)
+    wavfile.write('re.wav', 44100, scaled)
+    scaled = np.int16(sinus_mi / np.max(np.abs(sinus_mi)) * 32767)
+    wavfile.write('mi.wav', 44100, scaled)
+    scaled = np.int16(sinus_fa / np.max(np.abs(sinus_fa)) * 32767)
+    wavfile.write('fa.wav', 44100, scaled)
+    scaled = np.int16(sinus_sol / np.max(np.abs(sinus_sol)) * 32767)
+    wavfile.write('sol.wav', 44100, scaled)
+    scaled = np.int16(sinus_la / np.max(np.abs(sinus_la)) * 32767)
+    wavfile.write('la.wav', 44100, scaled)
+    scaled = np.int16(sinus_si / np.max(np.abs(sinus_si)) * 32767)
+    wavfile.write('si.wav', 44100, scaled)
+    scaled = np.int16(symphonie / np.max(np.abs(symphonie)) * 32767)
+    wavfile.write('symph.wav', 44100, scaled)
 
     # Fichier wav
     plt.figure("Fichier wav")
