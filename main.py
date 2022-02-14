@@ -112,15 +112,22 @@ def son_corrompu():
     for n in range(10):
         signal_filtree = np.convolve(signal_filtree, repImp)
 
-    plt.figure("Signal filtrée")
-    plt.plot(signal_filtree)
-
     # Créer nouveau fichier .wav
     wavfile.write('basson.wav', fe, signal_filtree.astype(np.int16))
 
-    # Fichier .wav
-    plt.figure("Fichier wav")
-    plt.plot(data)
+    #Signal de synthèse
+    signal_filtree_db = 20*np.log10(signal_filtree)
+    plt.figure("Basson synthèse")
+    plt.plot(signal_filtree_db)
+    plt.xlabel("fréquence (Hz)")
+    plt.ylabel("Magnitude (dB)")
+
+    #Signal original
+    data_db = 20*np.log10(data)
+    plt.figure("Basson original")
+    plt.plot(data_db)
+    plt.xlabel("fréquence (Hz)")
+    plt.ylabel("Magnitude (dB)")
     plt.show()
 
 
