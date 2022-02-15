@@ -186,11 +186,10 @@ def son_corrompu():
 
     #Signal filtrée
     repImp = []
-    n_RIF=np.arange(int(-N/2), int(N/2))
     for n in range(int(-N/2), int(N/2)):
         repImp.append(h_n(n))
 
-    signal_filtree = np.convolve(data, repImp)
+    signal_filtree = np.convolve(data*np.hamming(len(data)), repImp)
 
     #Répétition
     for n in range(10):
