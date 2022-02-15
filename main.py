@@ -192,11 +192,26 @@ def son_corrompu():
     signal_filtree = np.convolve(data*np.hamming(len(data)), repImp)
 
     #Répétition
-    for n in range(10):
+    for n in range(6):
         signal_filtree = np.convolve(signal_filtree, repImp)
 
     # Créer nouveau fichier .wav
     wavfile.write('basson.wav', fe, signal_filtree.astype(np.int16))
+
+    #Réponse en fréquence du filtre-coupe bande
+    repFreq = np.fft.fft(repImp[int(len(repImp)/2):])
+    freq=np.arange(int(len(repFreq)))*fe/N*2
+
+    plt.figure("Réponse en fréquence du filtre coupe-bande")
+    plt.subplot(2, 1, 1).set_title("Amplitude")
+    plt.plot(freq[:int(len(freq)/8)], np.abs(repFreq[:int(len(repFreq)/8)]))
+    plt.xlabel("Fréquence (Hz)")
+    plt.ylabel("H(m) (dB)")
+
+    plt.subplot(2, 1, 2).set_title("Phase")
+    plt.plot(freq[:int(len(freq)/8)], np.angle(repFreq[:int(len(repFreq)/8)]))
+    plt.xlabel("Fréquence (Hz)")
+    plt.ylabel("Phase (radian)")
 
     #Signal de synthèse
     signal_filtree_db = 20*np.log10(signal_filtree)
