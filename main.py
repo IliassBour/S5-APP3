@@ -166,7 +166,6 @@ def sinusoïdes_principales():
     # Fichier wav
     plt.figure("Fichier wav")
     plt.plot(data)
-    plt.show()
 
 def son_corrompu():
     data, fe = extract_wave("note_basson_plus_sinus_1000_Hz.wav")
@@ -185,7 +184,7 @@ def son_corrompu():
     h_n = lambda n: dirac(n) - h_n_bas(n)*np.cos(2*np.pi*omega_0 /fe*n)
 
     #Signal filtrée
-    repImp = []
+    repImp = [] # h[n]
     for n in range(int(-N/2), int(N/2)):
         repImp.append(h_n(n))
 
@@ -196,43 +195,58 @@ def son_corrompu():
         signal_filtree = np.convolve(signal_filtree, repImp)
 
     # Créer nouveau fichier .wav
-    wavfile.write('basson.wav', fe, signal_filtree.astype(np.int16))
+    wavfile.write('basson_synthese.wav', fe, signal_filtree.astype(np.int16))
+
+    #Réponse impulsionnelle
+    plt.figure("Réponse impulsionnelle coupe-bande")
+    plt.plot(range(int(-N/2), int(N/2)), repImp)
+    plt.xlabel("Nombre d'échantillon")
+    plt.ylabel("Amplitude de h(n)")
+
+    #Réponse à une sinusoïde de 1 kHz
+    n_sin = np.arange(0, 1024)
+    sin_1kHz = np.sin(2*np.pi*1000*n_sin)
+    rep_1kHz = np.convolve(sin_1kHz, repImp)
+
+    for n in range(4):
+        rep_1kHz = np.convolve(rep_1kHz, repImp)
+    freq_rep_1kHz = np.arange(int(len(n_sin)+5*6000-5)) #nombre de répétition * N_hn - nombre de répétition +N_sin
+
+    plt.figure("Réponse sinusoïde de 1 kHz")
+    plt.plot(freq_rep_1kHz, rep_1kHz)
+    plt.xlabel("Échantillon")
+    plt.ylabel("Amplitude")
 
     #Réponse en fréquence du filtre-coupe bande
-    repFreq = np.fft.fft(repImp[int(len(repImp)/2):])
+    repFreq = np.fft.fft(repImp[int(len(repImp) / 2):]) # H[m]
     freq=np.arange(int(len(repFreq)))*fe/N*2
 
-    plt.figure("Réponse en fréquence du filtre coupe-bande")
-    plt.subplot(2, 1, 1).set_title("Amplitude")
+    plt.figure("Amplitude de la réponse en fréquence du filtre coupe-bande")
     plt.plot(freq[:int(len(freq)/8)], np.abs(repFreq[:int(len(repFreq)/8)]))
     plt.xlabel("Fréquence (Hz)")
-    plt.ylabel("H(m) (dB)")
+    plt.ylabel("Amplitude de H(m) (dB)")
 
-    plt.subplot(2, 1, 2).set_title("Phase")
+    plt.figure("Phase de la réponse en fréquence du filtre coupe-bande")
     plt.plot(freq[:int(len(freq)/8)], np.angle(repFreq[:int(len(repFreq)/8)]))
     plt.xlabel("Fréquence (Hz)")
-    plt.ylabel("Phase (radian)")
+    plt.ylabel("Phase de H(m) (radian)")
 
     #Signal de synthèse
     signal_filtree_db = 20*np.log10(signal_filtree)
-    plt.figure("Basson synthèse")
+    plt.figure("Signaux du basson après filtrage")
     plt.plot(signal_filtree_db)
-    plt.xlabel("fréquence (Hz)")
+    plt.xlabel("Fréquence (Hz)")
     plt.ylabel("Magnitude (dB)")
 
     #Signal original
     data_db = 20*np.log10(data)
-    plt.figure("Basson original")
+    plt.figure("Signaux du basson avant filtrage")
     plt.plot(data_db)
-    plt.xlabel("fréquence (Hz)")
+    plt.xlabel("Fréquence (Hz)")
     plt.ylabel("Magnitude (dB)")
-    plt.show()
 
 
 if __name__ == "__main__":
     #sinusoïdes_principales()
-    #filtre_RIF_passe_bas()
     son_corrompu()
     plt.show()
-    #son_corrompu()
-
