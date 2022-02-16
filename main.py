@@ -109,6 +109,11 @@ def sinusoïdes_principales():
     ####################################################################################################################
     hn = np.full(K, 1/K)
 
+    plt.figure("Fonction de réponse")
+    hm = np.fft.fft(hn)
+    plt.plot(20*np.log10(np.abs(hm)))
+    plt.ylabel("Amplitude (dB)")
+
     enveloppe = np.convolve(data, hn)
 
     temps = [i/fe for i in range(len(enveloppe))]
