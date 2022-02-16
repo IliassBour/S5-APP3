@@ -140,31 +140,22 @@ def sinusoïdes_principales():
     la_d_synth = np.fft.fft(sinus_lad)
     freq_synth = [(i / int(len(la_d_synth))/2) * fe for i in range(int(len(la_d_synth)/2))]
     plt.figure("LA# Synth")
-    plt.plot(freq_synth, 20*np.log10(la_d_synth[:int(len(la_d_synth)/2)]))
+    plt.plot(freq_synth, 20*np.log10(np.abs(la_d_synth)[:int(len(la_d_synth)/2)]))
     plt.xlabel("Fréquence (Hz)")
     plt.ylabel("Magnitude (dB)")
     ###
 
 
     # Créer nouveaux fichier .wav
-    scaled = np.int16(sinus_do / np.max(np.abs(sinus_do)) * 32767)
-    wavfile.write('do.wav', 44100, scaled)
-    scaled = np.int16(sinus_re / np.max(np.abs(sinus_re)) * 32767)
-    wavfile.write('re.wav', 44100, scaled)
-    scaled = np.int16(sinus_mi / np.max(np.abs(sinus_mi)) * 32767)
-    wavfile.write('mi.wav', 44100, scaled)
-    scaled = np.int16(sinus_fa / np.max(np.abs(sinus_fa)) * 32767)
-    wavfile.write('fa.wav', 44100, scaled)
-    scaled = np.int16(sinus_sol / np.max(np.abs(sinus_sol)) * 32767)
-    wavfile.write('sol.wav', 44100, scaled)
-    scaled = np.int16(sinus_la / np.max(np.abs(sinus_la)) * 32767)
-    wavfile.write('la.wav', 44100, scaled)
-    scaled = np.int16(sinus_si / np.max(np.abs(sinus_si)) * 32767)
-    wavfile.write('si.wav', 44100, scaled)
-    scaled = np.int16(symphonie / np.max(np.abs(symphonie)) * 32767)
-    wavfile.write('symph.wav', 44100, scaled)
-    scaled = np.int16(sinus_lad / np.max(np.abs(sinus_lad)) * 32767)
-    wavfile.write('la_d.wav', 44100, scaled)
+    wavfile.write('do.wav', fe, sinus_do.astype(np.int16))
+    wavfile.write('re.wav', fe, sinus_re.astype(np.int16))
+    wavfile.write('mi.wav', fe, sinus_mi.astype(np.int16))
+    wavfile.write('fa.wav', fe, sinus_fa.astype(np.int16))
+    wavfile.write('sol.wav', fe, sinus_sol.astype(np.int16))
+    wavfile.write('la.wav', fe, sinus_la.astype(np.int16))
+    wavfile.write('si.wav', fe, sinus_si.astype(np.int16))
+    wavfile.write('symph.wav', fe, symphonie.astype(np.int16))
+    wavfile.write('la_d.wav', fe, sinus_lad.astype(np.int16))
 
     # Fichier wav
     plt.figure("Fichier wav")
